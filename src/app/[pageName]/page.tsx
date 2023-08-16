@@ -83,8 +83,6 @@ const BackButton = styled(Link)`
   font-size: 16px;
 `;
 
-
-
 export default function ContentPage({ params }: ContentPageProps) {
     const [messages, setMessages] = useState<IMessages[]>([]);
     const [newMessage, setNewMessage] = useState<string>("");
@@ -158,3 +156,4 @@ export default function ContentPage({ params }: ContentPageProps) {
         </FullPageContainer>
     );
 }
+
