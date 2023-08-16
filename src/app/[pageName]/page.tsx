@@ -1,7 +1,7 @@
 'use client'
 import Link from "next/link";
 import axiosInstance from "@/lib/axios";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import styled from "styled-components";
 
 interface ContentPageProps {
@@ -10,12 +10,13 @@ interface ContentPageProps {
     };
 }
 
-interface Message {
-    _id: string;
-    RoomName: string;
-    content: string;
-    createdTime: string;
-    __v: number;
+interface IMessages {
+    content: string
+    created_at: {
+        seconds: number,
+        nanoseconds: number
+    }
+    roomname: string
 }
 
 const FullPageContainer = styled.div`
@@ -39,7 +40,7 @@ const MessagesList = styled.div`
   max-height: 400px;
   overflow-y: scroll;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
 `;
 
 const MessageContainer = styled.div`
@@ -73,7 +74,7 @@ const NewMessageButton = styled.button`
   cursor: pointer;
 `;
 
-const BackButton = styled.a`
+const BackButton = styled(Link)`
   display: block;
   margin-bottom: 10px;
   color: #007bff;
@@ -82,22 +83,28 @@ const BackButton = styled.a`
   font-size: 16px;
 `;
 
+
+
 export default function ContentPage({ params }: ContentPageProps) {
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<IMessages[]>([]);
     const [newMessage, setNewMessage] = useState<string>("");
     const messagesListRef = useRef<HTMLDivElement>(null);
 
-    const fetchMessages = () => {
+    const fetchMessages = useCallback(() => {
         axiosInstance
             .get(`/api/get-room-content?nameRoom=${params.pageName}`)
             .then((res) => {
-                setMessages(res.data);
+                const sortedMessages = res.data.sort((a: IMessages, b: IMessages) =>
+                    a.created_at.seconds < b.created_at.seconds ? -1 : 1
+                );
+                setMessages(sortedMessages);
             });
-    };
+    }, [params.pageName]);
+
 
     useEffect(() => {
         fetchMessages();
-    }, [params.pageName]);
+    }, [fetchMessages, params.pageName]);
 
     useEffect(() => {
         messagesListRef.current?.scrollTo(0, messagesListRef.current.scrollHeight);
@@ -126,15 +133,13 @@ export default function ContentPage({ params }: ContentPageProps) {
     return (
         <FullPageContainer>
             <ChatContainer>
-                <Link href="/">
-                    <BackButton>{`< Voltar`}</BackButton>
-                </Link>
+                <BackButton href="/">{`< Voltar`}</BackButton>
                 <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
                     Chat Room: {params.pageName}
                 </h1>
                 <MessagesList ref={messagesListRef}>
                     {messages.map((message) => (
-                        <MessageContainer key={message._id}>
+                        <MessageContainer key={message.created_at.nanoseconds}>
                             <p>{message.content}</p>
                         </MessageContainer>
                     ))}
